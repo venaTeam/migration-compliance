@@ -1,0 +1,125 @@
+{
+  "version": "0.1.0",
+  "fields": [
+    {
+      "name": "Send-Alert",
+      "location": "label",
+      "required": true,
+      "explanation": "Enables sending alerts from this alert rule. Without it, alerts will not be sent.",
+      "default_value": "true",
+      "constraints": {
+        "exact_value": "true"
+      }
+    },
+    {
+      "name": "Appchi-$operator",
+      "location": "label",
+      "required": true,
+      "explanation": "The team's personal notification policy connected to its contact point. The operator name is selected from Grafana notification policies that start with 'Appchi - '.",
+      "constraints": {
+        "starts_with": "Appchi - "
+      }
+    },
+    {
+      "name": "component",
+      "location": "label",
+      "required": true,
+      "explanation": "The component this alert monitors.",
+      "constraints": {
+        "min_length": 2,
+        "max_length": 200
+      }
+    },
+    {
+      "name": "application",
+      "location": "label",
+      "required": true,
+      "explanation": "The application name. If omitted, the field will not appear in the alert.",
+      "constraints": {
+        "min_length": 2,
+        "max_length": 50
+      }
+    },
+    {
+      "name": "node_name",
+      "location": "label",
+      "required": false,
+      "explanation": "Optional node or instance name.",
+      "constraints": {
+        "min_length": 2,
+        "max_length": 200
+      }
+    },
+    {
+      "name": "severity",
+      "location": "label",
+      "required": false,
+      "explanation": "Alert severity. Defaults to 'high' if not provided.",
+      "constraints": {
+        "allowed_values": ["critical", "high", "warning"]
+      },
+      "default_value": "high"
+    },
+    {
+      "name": "network",
+      "location": "label",
+      "required": false,
+      "explanation": "Network identifier. Defaults to 'nesharim' if not provided.",
+      "constraints": {
+        "min_length": 2,
+        "max_length": 200
+      },
+      "default_value": "nesharim"
+    },
+    {
+      "name": "site",
+      "location": "label",
+      "required": true,
+      "explanation": "The site this alert belongs to. Free-form text field, no predefined list of values.",
+      "constraints": {
+        "min_length": 2,
+        "max_length": 200
+      }
+    },
+    {
+      "name": "environment",
+      "location": "label",
+      "required": false,
+      "explanation": "Deployment environment. Defaults to 'production' if not provided.",
+      "constraints": {
+        "allowed_values": ["production", "integration", "load", "development", "test"]
+      },
+      "default_value": "production"
+    },
+    {
+      "name": "message",
+      "location": "annotation",
+      "required": true,
+      "explanation": "The alert message shown in notifications.",
+      "constraints": {
+        "min_length": 2,
+        "max_length": 800
+      }
+    },
+    {
+      "name": "impact",
+      "location": "annotation",
+      "required": false,
+      "explanation": "Description of the business or operational impact.",
+      "constraints": {
+        "min_length": 2,
+        "max_length": 200
+      }
+    },
+    {
+      "name": "Runbook_url",
+      "location": "annotation",
+      "required": false,
+      "explanation": "Link to the alert runbook or makhteg (מקט'ג).",
+      "constraints": {
+        "min_length": 2,
+        "max_length": 200
+      }
+    }
+  ]
+}

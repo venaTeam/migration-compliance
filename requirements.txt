@@ -1,0 +1,17 @@
+# Production runtime dependencies for the compliance service.
+# Install with: pip install -r requirements.txt
+
+fastapi==0.141.1
+httpx==0.28.1
+pydantic==2.13.4
+pydantic-settings==2.15.0
+uvicorn==0.52.1
+
+# Development / test / lint dependencies
+pytest==8.4.2
+pytest-asyncio==1.4.0
+pytest-cov==7.1.0
+pytest-subtests==0.14.2
+respx==0.22.0
+ruff==0.15.14
+mypy==2.3.0
