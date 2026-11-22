@@ -1,8 +1,9 @@
 """Rule evaluation endpoint."""
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Depends
 
 from src.adapter.mapper import map_rule_to_standard
+from src.api.grafana_credentials import GrafanaCredentials, grafana_credentials
 from src.config import settings
 from src.evaluator.engine import evaluate_rule
 from src.grafana.client import GrafanaClient
@@ -14,14 +15,13 @@ router = APIRouter()
 @router.post("/evaluate")
 async def evaluate(
     request: EvaluateRequest,
-    x_grafana_url: str = Header(..., alias="X-Grafana-Url"),
-    x_grafana_username: str = Header(..., alias="X-Grafana-Username"),
-    x_grafana_password: str = Header(..., alias="X-Grafana-Password"),
+    credentials: GrafanaCredentials = Depends(grafana_credentials),
 ) -> EvaluateResponse:
     client = GrafanaClient(
-        base_url=x_grafana_url,
-        username=x_grafana_username,
-        password=x_grafana_password,
+        base_url=credentials.url,
+        username=credentials.username,
+        password=credentials.password,
+        token=credentials.token,
         verify=not settings.grafana_insecure_tls,
     )
     rule = await client.get_rule(request.rule_url)
