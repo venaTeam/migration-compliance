@@ -11,11 +11,19 @@ from src.standard.models import StandardField
 class StandardRule:
     """A normalized view of an alert rule focused on standard fields."""
 
-    def __init__(self, uid: str, title: str, labels: dict[str, str], annotations: dict[str, str]):
+    def __init__(
+        self,
+        uid: str,
+        title: str,
+        labels: dict[str, str],
+        annotations: dict[str, str],
+        folder_uid: str | None = None,
+    ):
         self.uid = uid
         self.title = title
         self.labels = labels
         self.annotations = annotations
+        self.folder_uid = folder_uid
 
 
 def map_rule_to_standard(raw_rule: dict[str, Any]) -> StandardRule:
@@ -34,6 +42,7 @@ def map_rule_to_standard(raw_rule: dict[str, Any]) -> StandardRule:
         title=title,
         labels=labels,
         annotations=annotations,
+        folder_uid=raw_rule.get("folderUID") or None,
     )
 
 

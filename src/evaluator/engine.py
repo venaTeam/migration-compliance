@@ -30,6 +30,7 @@ def evaluate_rule(
     return {
         "rule_uid": rule.uid,
         "rule_title": rule.title,
+        "folder_uid": rule.folder_uid,
         "standard_version": schema.version,
         "overall_status": "NON_COMPLIANT" if any_non_compliant else "COMPLIANT",
         "fields": field_verdicts,

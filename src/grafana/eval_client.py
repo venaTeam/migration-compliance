@@ -7,6 +7,7 @@ from urllib.parse import quote
 
 import httpx
 
+from src.grafana.auth import grafana_auth
 from src.grafana.errors import GrafanaAPIError, GrafanaAuthError
 
 
@@ -16,21 +17,23 @@ class GrafanaEvalClient:
     def __init__(
         self,
         base_url: str,
-        username: str,
-        password: str,
+        username: str | None = None,
+        password: str | None = None,
         timeout: float = 30.0,
         verify: bool = True,
+        token: str | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.username = username
         self.password = password
         self.timeout = timeout
         self.verify = verify
+        self._auth = grafana_auth(username, password, token)
 
     def _client(self) -> httpx.AsyncClient:
         return httpx.AsyncClient(
             base_url=self.base_url,
-            auth=(self.username, self.password),
+            auth=self._auth,
             timeout=self.timeout,
             headers={"Accept": "application/json", "Content-Type": "application/json"},
             verify=self.verify,

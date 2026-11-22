@@ -33,8 +33,8 @@ class StandardSchema(BaseModel):
 class EvaluateRequest(BaseModel):
     rule_url: str = Field(..., description="Grafana alert rule URL or UID")
     grafana_url: str = Field(..., description="Grafana base URL")
-    grafana_username: str
-    grafana_password: str
+    grafana_username: str | None = Field(None, description="Not needed when X-Grafana-Token is set")
+    grafana_password: str | None = Field(None, description="Not needed when X-Grafana-Token is set")
 
 
 class FieldVerdict(BaseModel):
@@ -51,6 +51,7 @@ class FieldVerdict(BaseModel):
 class EvaluateResponse(BaseModel):
     rule_uid: str
     rule_title: str
+    folder_uid: str | None = None
     standard_version: str
     overall_status: Literal["COMPLIANT", "NON_COMPLIANT"]
     fields: list[FieldVerdict]
