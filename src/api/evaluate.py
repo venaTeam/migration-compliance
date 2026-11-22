@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends
 
 from src.adapter.mapper import map_rule_to_standard
-from src.api.grafana_credentials import GrafanaCredentials, grafana_credentials, require_basic_auth
+from src.api.grafana_credentials import GrafanaCredentials, grafana_credentials
 from src.config import settings
 from src.evaluator.engine import evaluate_rule
 from src.grafana.client import GrafanaClient
@@ -17,15 +17,6 @@ async def evaluate(
     request: EvaluateRequest,
     credentials: GrafanaCredentials = Depends(grafana_credentials),
 ) -> EvaluateResponse:
-    if credentials.token is None:
-        # Without a token the body must still carry the credentials, as before.
-        require_basic_auth(
-            "body",
-            {
-                "grafana_username": request.grafana_username,
-                "grafana_password": request.grafana_password,
-            },
-        )
     client = GrafanaClient(
         base_url=credentials.url,
         username=credentials.username,

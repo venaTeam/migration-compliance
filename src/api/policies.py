@@ -11,7 +11,9 @@ router = APIRouter()
 
 @router.get("/notification-policies")
 async def get_notification_policies(
-    prefix: str = Query(..., description="Filter policies whose names start with this prefix"),
+    prefix: str = Query(
+        ..., description="Filter policies whose names start with this prefix"
+    ),
     credentials: GrafanaCredentials = Depends(grafana_credentials),
 ) -> dict[str, list[str]]:
     client = GrafanaClient(

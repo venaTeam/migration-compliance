@@ -33,8 +33,8 @@ class StandardSchema(BaseModel):
 class EvaluateRequest(BaseModel):
     rule_url: str = Field(..., description="Grafana alert rule URL or UID")
     grafana_url: str = Field(..., description="Grafana base URL")
-    grafana_username: str | None = Field(None, description="Not needed when X-Grafana-Token is set")
-    grafana_password: str | None = Field(None, description="Not needed when X-Grafana-Token is set")
+    grafana_username: str | None = Field(None, description="Ignored; credentials come from the headers")
+    grafana_password: str | None = Field(None, description="Ignored; credentials come from the headers")
 
 
 class FieldVerdict(BaseModel):

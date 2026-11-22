@@ -8,6 +8,7 @@ from fastapi import Header
 from fastapi.exceptions import RequestValidationError
 
 MISSING_CREDENTIAL_MSG = "Field required unless X-Grafana-Token is set"
+EMPTY_TOKEN_MSG = "X-Grafana-Token is empty"
 
 
 @dataclass(frozen=True)
@@ -25,11 +26,25 @@ def grafana_credentials(
     x_grafana_token: str | None = Header(None, alias="X-Grafana-Token"),
 ) -> GrafanaCredentials:
     """Use the token when present, otherwise require username and password."""
-    if x_grafana_token:
+    if x_grafana_token is not None:
+        if not x_grafana_token.strip():
+            raise RequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("header", "X-Grafana-Token"),
+                        "msg": EMPTY_TOKEN_MSG,
+                        "input": None,
+                    }
+                ]
+            )
         return GrafanaCredentials(url=x_grafana_url, token=x_grafana_token)
     require_basic_auth(
         "header",
-        {"X-Grafana-Username": x_grafana_username, "X-Grafana-Password": x_grafana_password},
+        {
+            "X-Grafana-Username": x_grafana_username,
+            "X-Grafana-Password": x_grafana_password,
+        },
     )
     return GrafanaCredentials(
         url=x_grafana_url,
@@ -42,7 +57,12 @@ def require_basic_auth(location: str, fields: dict[str, str | None]) -> None:
     """Raise a 422 shaped like FastAPI's own for each missing field."""
     errors = [
         # input is left empty so a submitted password is never echoed back.
-        {"type": "missing", "loc": (location, name), "msg": MISSING_CREDENTIAL_MSG, "input": None}
+        {
+            "type": "missing",
+            "loc": (location, name),
+            "msg": MISSING_CREDENTIAL_MSG,
+            "input": None,
+        }
         for name, value in fields.items()
         if value is None
     ]

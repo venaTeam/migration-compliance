@@ -34,8 +34,15 @@ RULE = {
     "labels": {},
     "annotations": {},
 }
-EVALUATE_BODY = {"rule_url": f"{GRAFANA}/alerting/grafana/rule-1/view", "grafana_url": GRAFANA}
-BASIC_EVALUATE_BODY = {**EVALUATE_BODY, "grafana_username": "alice", "grafana_password": PASSWORD}
+EVALUATE_BODY = {
+    "rule_url": f"{GRAFANA}/alerting/grafana/rule-1/view",
+    "grafana_url": GRAFANA,
+}
+BASIC_EVALUATE_BODY = {
+    **EVALUATE_BODY,
+    "grafana_username": "alice",
+    "grafana_password": PASSWORD,
+}
 
 # (method, path, request kwargs with a token, request kwargs with basic auth)
 ENDPOINTS: dict[str, tuple[str, str, dict[str, Any], dict[str, Any]]] = {
@@ -63,15 +70,23 @@ ENDPOINTS: dict[str, tuple[str, str, dict[str, Any], dict[str, Any]]] = {
 @pytest.fixture
 def grafana() -> Iterator[respx.MockRouter]:
     with respx.mock(base_url=GRAFANA, assert_all_called=False) as router:
-        router.get("/api/v1/provisioning/alert-rules/rule-1", name="rule").respond(json=RULE)
-        router.get("/api/v1/provisioning/policies").respond(json={"receiver": "Appchi - ops"})
+        router.get("/api/v1/provisioning/alert-rules/rule-1", name="rule").respond(
+            json=RULE
+        )
+        router.get("/api/v1/provisioning/policies").respond(
+            json={"receiver": "Appchi - ops"}
+        )
         router.post("/api/v1/eval").respond(json={"results": {"A": {"frames": []}}})
         yield router
 
 
-async def call(method: str, path: str, headers: dict[str, str], **kwargs: Any) -> httpx.Response:
+async def call(
+    method: str, path: str, headers: dict[str, str], **kwargs: Any
+) -> httpx.Response:
     transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://compliance") as client:
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://compliance"
+    ) as client:
         return await client.request(method, path, headers=headers, **kwargs)
 
 
@@ -88,17 +103,23 @@ async def test_evaluate_returns_folder_uid(grafana: respx.MockRouter) -> None:
     assert body["folder_uid"] == "folder-1"
 
 
-async def test_evaluate_folder_uid_is_null_when_rule_has_none(grafana: respx.MockRouter) -> None:
+async def test_evaluate_folder_uid_is_null_when_rule_has_none(
+    grafana: respx.MockRouter,
+) -> None:
     grafana["rule"].respond(json={k: v for k, v in RULE.items() if k != "folderUID"})
 
-    response = await call("POST", "/api/v1/evaluate", BASIC_HEADERS, json=BASIC_EVALUATE_BODY)
+    response = await call(
+        "POST", "/api/v1/evaluate", BASIC_HEADERS, json=BASIC_EVALUATE_BODY
+    )
 
     assert response.status_code == 200
     assert response.json()["folder_uid"] is None
 
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
-async def test_token_sends_bearer_header(grafana: respx.MockRouter, endpoint: str) -> None:
+async def test_token_sends_bearer_header(
+    grafana: respx.MockRouter, endpoint: str
+) -> None:
     method, path, token_kwargs, _ = ENDPOINTS[endpoint]
 
     response = await call(method, path, TOKEN_HEADERS, **token_kwargs)
@@ -108,7 +129,9 @@ async def test_token_sends_bearer_header(grafana: respx.MockRouter, endpoint: st
     assert sent_auth(grafana) == [BEARER] * grafana.calls.call_count
 
 
-async def test_token_takes_precedence_over_basic_auth(grafana: respx.MockRouter) -> None:
+async def test_token_takes_precedence_over_basic_auth(
+    grafana: respx.MockRouter,
+) -> None:
     headers = {**BASIC_HEADERS, "X-Grafana-Token": TOKEN}
 
     response = await call("POST", "/api/v1/evaluate", headers, json=BASIC_EVALUATE_BODY)
@@ -129,7 +152,9 @@ async def test_basic_auth_unchanged(grafana: respx.MockRouter, endpoint: str) ->
 
 
 @pytest.mark.parametrize("endpoint", ENDPOINTS)
-async def test_missing_credentials_rejected(grafana: respx.MockRouter, endpoint: str) -> None:
+async def test_missing_credentials_rejected(
+    grafana: respx.MockRouter, endpoint: str
+) -> None:
     method, path, _, basic_kwargs = ENDPOINTS[endpoint]
 
     response = await call(method, path, {"X-Grafana-Url": GRAFANA}, **basic_kwargs)
@@ -144,14 +169,23 @@ async def test_missing_credentials_rejected(grafana: respx.MockRouter, endpoint:
     assert not grafana.calls
 
 
-async def test_evaluate_without_token_still_requires_body_credentials(
-    grafana: respx.MockRouter,
-) -> None:
+async def test_evaluate_needs_no_body_credentials(grafana: respx.MockRouter) -> None:
     response = await call("POST", "/api/v1/evaluate", BASIC_HEADERS, json=EVALUATE_BODY)
 
+    assert response.status_code == 200, response.text
+
+
+async def test_empty_token_is_reported(grafana: respx.MockRouter) -> None:
+    response = await call(
+        "POST",
+        "/api/v1/evaluate",
+        {"X-Grafana-Url": GRAFANA, "X-Grafana-Token": ""},
+        json=EVALUATE_BODY,
+    )
+
     assert response.status_code == 422
-    locs = [tuple(e["loc"]) for e in response.json()["detail"]]
-    assert locs == [("body", "grafana_username"), ("body", "grafana_password")]
+    errors = response.json()["detail"]
+    assert [tuple(e["loc"]) for e in errors] == [("header", "X-Grafana-Token")]
     assert not grafana.calls
 
 
@@ -160,10 +194,26 @@ async def test_rejection_does_not_echo_password(grafana: respx.MockRouter) -> No
     body = {**EVALUATE_BODY, "grafana_password": PASSWORD}
 
     header_response = await call("POST", "/api/v1/evaluate", headers, json=body)
-    body_response = await call(
-        "POST", "/api/v1/evaluate", {**BASIC_HEADERS, "X-Grafana-Password": "x"}, json=body
-    )
 
-    for response in (header_response, body_response):
+    # Another body field failing must not echo the body either.
+    no_rule_url = {k: v for k, v in body.items() if k != "rule_url"}
+    missing_field_response = await call(
+        "POST", "/api/v1/evaluate", BASIC_HEADERS, json=no_rule_url
+    )
+    non_string_response = await call(
+        "POST",
+        "/api/v1/evaluate",
+        BASIC_HEADERS,
+        json={**EVALUATE_BODY, "grafana_password": 12345},
+    )
+    missing_url_header = await call("POST", "/api/v1/evaluate", {}, json=no_rule_url)
+
+    for response in (
+        header_response,
+        missing_field_response,
+        missing_url_header,
+    ):
         assert response.status_code == 422
         assert PASSWORD not in response.text
+    assert non_string_response.status_code == 422
+    assert "12345" not in non_string_response.text
